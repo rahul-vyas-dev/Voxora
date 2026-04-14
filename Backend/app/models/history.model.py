@@ -2,7 +2,7 @@ from sqlalchemy import String, DateTime, TEXT
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
-import datetime
+from datetime import datetime
 
 
 class Base(DeclarativeBase):
@@ -13,10 +13,12 @@ class ChatHistory(Base):
     # Table Name
     __tablename__ = "chat_history"
     # columns for table
-    SSid: Mapped[str] = mapped_column(String, primary_key=True, index=True, nullable=False)
-    userPrompt: Mapped[str] = mapped_column(TEXT(30))
-    aiResponse: Mapped[str] = mapped_column(TEXT)
-    time_stamps: Mapped[DateTime] = mapped_column(DateTime, default=datetime.datetime.utcnow)
+    session_id: Mapped[str] = mapped_column(String, index=True, nullable=False)
+    user_prompt: Mapped[str] = mapped_column(TEXT)
+    ai_response: Mapped[str] = mapped_column(TEXT)
+    time_stamps: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.now()
+    )
 
     def __repr__(self) -> str:
-        return f"ChatHistory(SSid={self.SSid!r}, userPrompt={self.userPrompt!r}, aiResponse={self.aiResponse!r}, time_stamps={self.time_stamps!r})"
+        return f"ChatHistory(session_id={self.session_id!r}, user_prompt={self.user_prompt!r}, ai_response={self.ai_response!r}, time_stamps={self.time_stamps!r})"
