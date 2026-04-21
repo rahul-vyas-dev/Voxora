@@ -9,7 +9,11 @@ load_dotenv()
 CONNECTION_URL = os.getenv("connection_string")
 
 try:
-    engine = create_engine(str(CONNECTION_URL), echo=True)
+    # Engine
+    engine = create_engine(
+        str(CONNECTION_URL), echo=True, pool_size=10, max_overflow=20
+    )
+    # Session
     sessionLocal = sessionmaker(
         bind=engine,
         autoflush=False,
