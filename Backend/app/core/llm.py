@@ -50,7 +50,7 @@ def run_llm(
     if not model:
         raise ValueError("Model name is required")
 
-    if not msg or not isinstance(msg, list):
+    if not msg:
         raise ValueError("msg must be a non-empty list")
 
     try:
