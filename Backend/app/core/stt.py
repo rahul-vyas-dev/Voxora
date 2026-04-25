@@ -9,7 +9,7 @@ def get_whisper_model(model_size: str = "base"):
     return _model_cache[model_size]
 
 
-def transcribe_audio(
+def speech_to_text(
     audio_path: str,
     model_size: str = "base",
     translate: bool = False
