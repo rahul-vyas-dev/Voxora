@@ -37,7 +37,10 @@ def text_generation_and_text_to_speech_generation_pipeline(
             raise ValueError("TTS did not return any audio")
 
         # Return the generated audio
-        return audio
+        return {
+            "audio": audio,
+            "llm_text": llm_text
+            }
 
     except Exception as e:
         raise LLMTTSPipelineError("Error during llm/tts pipeline", e)
