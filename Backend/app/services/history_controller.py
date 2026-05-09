@@ -1,6 +1,6 @@
 from app.db.db import get_db
 from app.models.history_model import ChatHistory
-
+from sqlalchemy import delete
 
 def create_user_history(
     session_id: str,
@@ -25,3 +25,10 @@ def create_user_history(
 
     finally:
         db.close()
+
+def delete_session_chat(session_id: str):
+    try:
+        result = delete(ChatHistory).where(ChatHistory.session_id == session_id)
+        return result
+    except Exception as e:
+        print("Error during deleting session chat", e)

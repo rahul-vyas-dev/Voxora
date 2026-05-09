@@ -1,8 +1,10 @@
-from fastapi import WebSocket
+from fastapi import WebSocket, APIRouter
 import asyncio
 from app.core.stt import speech_to_text
 from app.services.chat_controller import text_generation_and_text_to_speech_generation_pipeline
 from app.services.history_controller import create_user_history
+
+router = APIRouter()
 
 
 class SessionState:
@@ -13,6 +15,7 @@ class SessionState:
         self.partial_text: str = ""
 
 
+@router.websocket("/ws")
 async def ws(ws: WebSocket):
     await ws.accept()
 
@@ -41,7 +44,8 @@ async def ws(ws: WebSocket):
 
                 await ws.send_json({
                     "type": "partial_text",
-                    "text": session.partial_text
+                    "text": ai_generated_text["text"],
+                    "detected_lang": ai_generated_text["language"]
                 })
                 
             except Exception as e:
