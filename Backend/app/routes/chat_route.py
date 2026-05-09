@@ -1,12 +1,14 @@
 from fastapi import FastAPI, WebSocket
 import asyncio
-
+from app.core.stt import speech_to_text
+from app.services.chat_controller import text_generation_and_text_to_speech_generation_pipeline
 
 class SessionState:
     def __init__(self) -> None:
         self.current_task: asyncio.Task | None = None
         self.task_id: int = 0
-
+        self.temp_audio_path: str = "session_audio.webm"
+        self.partial_text: str = ""
 
 app = FastAPI()
 
@@ -19,26 +21,61 @@ async def ws(ws: WebSocket):
     while True:
         msg = await ws.receive()
 
-        # 🎧 AUDIO CHUNK
+        # AUDIO CHUNK
         if "bytes" in msg:
+            session.task_id += 1
 
             # interrupt current pipeline
             if session.current_task and not session.current_task.done():
                 session.current_task.cancel()
+            
+            chunk = msg["bytes"]
 
-            session.audio_buffer.append(msg["bytes"])
+            try:            
+                with open(session.temp_audio_path, "ab") as f:
+                    f.write(chunk)
 
-        # 🛑 END OF SPEECH
+                ai_generated_text = speech_to_text(audio_path=session.temp_audio_path)
+
+                session.partial_text += " " + ai_generated_text["text"]
+
+                await ws.send_json({
+                    "type": "partial_text",
+                    "text": session.partial_text
+                })
+                
+            except Exception as e:
+                print("Error during STT:", e)
+
+            finally:
+                open(session.temp_audio_path, "wb").close()
+
+        # END OF SPEECH
         elif msg.get("text") == "END_SPEECH":
 
-            full_audio = b"".join(session.audio_buffer)
-            session.audio_buffer.clear()
-
             # new task id
-            session.task_id += 1
             tid = session.task_id
 
             # start pipeline
             session.current_task = asyncio.create_task(
-                pipeline(ws, full_audio, tid, session)
+                text_generation_and_text_to_speech_generation_pipeline(
+                    text = session.partial_text,
+                    tid = tid,
+                    session = session
+                ))
+
+            session.current_task.result().then(
+                lambda result: asyncio.create_task(
+                    ws.send_json({
+                        "type": "final_result",
+                        "audio": result["audio"],
+                        "llm_text": result["llm_text"]
+                    })
+                )
+            ).catch(
+                lambda e: print("Error in pipeline:", e)
             )
+            # reset partial text for next round
+            session.partial_text = ""
+        else:
+            print("Unknown message type received:", msg)
