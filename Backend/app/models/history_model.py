@@ -13,7 +13,7 @@ class ChatHistory(Base):
     # Table Name
     __tablename__ = "chat_history"
     # columns for table
-    session_id: Mapped[str] = mapped_column(String, index=True, nullable=False)
+    session_id: Mapped[str] = mapped_column(String, index=True, nullable=False, primary_key=True)
     user_prompt: Mapped[str] = mapped_column(TEXT)
     ai_response: Mapped[str] = mapped_column(TEXT)
     time_stamps: Mapped[datetime] = mapped_column(

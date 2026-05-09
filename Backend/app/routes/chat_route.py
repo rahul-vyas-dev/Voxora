@@ -1,7 +1,9 @@
-from fastapi import FastAPI, WebSocket
+from fastapi import WebSocket
 import asyncio
 from app.core.stt import speech_to_text
 from app.services.chat_controller import text_generation_and_text_to_speech_generation_pipeline
+from app.services.history_controller import create_user_history
+
 
 class SessionState:
     def __init__(self) -> None:
@@ -10,9 +12,7 @@ class SessionState:
         self.temp_audio_path: str = "session_audio.webm"
         self.partial_text: str = ""
 
-app = FastAPI()
 
-@app.websocket("/ws")
 async def ws(ws: WebSocket):
     await ws.accept()
 
@@ -72,10 +72,18 @@ async def ws(ws: WebSocket):
                         "llm_text": result["llm_text"]
                     })
                 )
+            ).then(
+                lambda result: create_user_history(
+                    session_id=str(msg.get("session_id")),
+                    user_prompt=session.partial_text,
+                    ai_response=result["llm_text"]
+                )
             ).catch(
                 lambda e: print("Error in pipeline:", e)
             )
+            
             # reset partial text for next round
             session.partial_text = ""
+
         else:
             print("Unknown message type received:", msg)
