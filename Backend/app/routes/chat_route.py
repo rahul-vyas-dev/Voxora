@@ -2,7 +2,7 @@ from fastapi import WebSocket, APIRouter
 import asyncio
 from app.core.stt import speech_to_text
 from app.services.chat_controller import text_generation_and_text_to_speech_generation_pipeline
-from app.services.history_controller import create_user_history
+from app.services.history_controller import create_user_history, delete_session_chat
 
 router = APIRouter()
 
@@ -11,7 +11,7 @@ class SessionState:
     def __init__(self) -> None:
         self.current_task: asyncio.Task | None = None
         self.task_id: int = 0
-        self.temp_audio_path: str = "session_audio.webm"
+        self.temp_audio_path: str = "uploads/session_audio.webm"
         self.partial_text: str = ""
 
 
@@ -34,7 +34,7 @@ async def ws(ws: WebSocket):
             
             chunk = msg["bytes"]
 
-            try:            
+            try:
                 with open(session.temp_audio_path, "ab") as f:
                     f.write(chunk)
 
@@ -91,3 +91,13 @@ async def ws(ws: WebSocket):
 
         else:
             print("Unknown message type received:", msg)
+
+
+@router.delete("/chat/{session_id}")
+def delete_chat(session_id: str):
+
+    if session_id == None:
+        return "Session ID is required."
+    
+    result = delete_session_chat(session_id=session_id)
+    return result

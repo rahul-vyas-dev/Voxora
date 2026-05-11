@@ -1,14 +1,14 @@
-from app.routes.chat_route import ws
 from fastapi import FastAPI
 from app.db.db import engine
 from app.models.history_model import Base
-from contextlib import asynccontextmanager
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.routes.chat_route import router as chat_router
+from app.routes.stt_route import router as stt_router
+from app.routes.llm_route import router as llm_router
 
 
 # =========================
@@ -18,7 +18,7 @@ from app.routes.chat_route import router as chat_router
 @asynccontextmanager
 async def lifespan(app: FastAPI):
 
-    # 🚀 STARTUP
+    # STARTUP
     print("Starting Voxora Backend...")
 
     # Create tables
@@ -28,7 +28,7 @@ async def lifespan(app: FastAPI):
 
     yield
 
-    # 🛑 SHUTDOWN
+    # SHUTDOWN
     print("Shutting down Voxora Backend...")
 
 
@@ -62,6 +62,8 @@ app.add_middleware(
 # =========================
 
 app.include_router(chat_router)
+app.include_router(stt_router)
+app.include_router(llm_router)
 
 
 # =========================

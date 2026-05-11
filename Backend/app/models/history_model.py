@@ -1,8 +1,9 @@
-from sqlalchemy import String, DateTime, TEXT
+from sqlalchemy import String, DateTime, TEXT, ARRAY
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 from datetime import datetime
+from sqlalchemy.dialects.postgresql import JSONB
 
 
 class Base(DeclarativeBase):
@@ -14,11 +15,10 @@ class ChatHistory(Base):
     __tablename__ = "chat_history"
     # columns for table
     session_id: Mapped[str] = mapped_column(String, index=True, nullable=False, primary_key=True)
-    user_prompt: Mapped[str] = mapped_column(TEXT)
-    ai_response: Mapped[str] = mapped_column(TEXT)
+    messages: Mapped[list[dict]] = mapped_column(JSONB, default=list)
     time_stamps: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.now()
+        DateTime, default = datetime.now
     )
 
     def __repr__(self) -> str:
-        return f"ChatHistory(session_id={self.session_id!r}, user_prompt={self.user_prompt!r}, ai_response={self.ai_response!r}, time_stamps={self.time_stamps!r})"
+        return f"ChatHistory(session_id={self.session_id!r}, messages={self.messages!r}, time_stamps={self.time_stamps!r})"
