@@ -96,8 +96,8 @@ async def ws(ws: WebSocket):
 @router.delete("/chat/{session_id}")
 def delete_chat(session_id: str):
 
-    if session_id == None:
+    if session_id is None:
         return "Session ID is required."
-    
+
     result = delete_session_chat(session_id=session_id)
     return result

@@ -1,6 +1,7 @@
 from app.db.db import get_db
 from app.models.history_model import ChatHistory
-from sqlalchemy import delete, select, update
+from sqlalchemy import delete, select
+
 
 async def create_user_history(
     session_id: str,
@@ -47,7 +48,6 @@ async def create_user_history(
         db.close()
 
 
-
 def delete_session_chat(session_id: str):
     db = next(get_db())
 
@@ -70,6 +70,30 @@ def delete_session_chat(session_id: str):
         return {
             "error": "Failed to delete session"
         }
+
+    finally:
+        db.close()
+
+
+def get_chat_history(session_ids: list[str]):
+
+    db = next(get_db())
+
+    try:
+        stmt = select(ChatHistory).where(
+            ChatHistory.session_id.in_(session_ids)
+        )
+
+        result = db.execute(stmt)
+
+        chats = result.scalars().all()
+
+        return chats
+
+    except Exception as e:
+        print("Error fetching chat history:", e)
+
+        return []
 
     finally:
         db.close()

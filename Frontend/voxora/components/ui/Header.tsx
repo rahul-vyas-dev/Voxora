@@ -19,7 +19,7 @@ export default function Header() {
   return (
     <header
       className="
-        sticky top-0 z-50 w-full bg-transparent"
+        sticky top-0 z-50 w-full bg-black"
     >
       <nav
         aria-label="Main navigation"

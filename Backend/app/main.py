@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.routes.chat_route import router as chat_router
 from app.routes.stt_route import router as stt_router
 from app.routes.llm_route import router as llm_router
+from app.routes.history_route import router as history_router
 
 
 # =========================
@@ -64,6 +65,7 @@ app.add_middleware(
 app.include_router(chat_router)
 app.include_router(stt_router)
 app.include_router(llm_router)
+app.include_router(history_router)
 
 
 # =========================

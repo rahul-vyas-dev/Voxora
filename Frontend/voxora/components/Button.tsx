@@ -49,9 +49,9 @@ const variantStyles: Record<ButtonVariant, string> = {
 };
 
 const sizeStyles: Record<ButtonSize, string> = {
-  sm: "h-9 px-3 text-sm",
-  md: "h-11 px-5 text-sm",
-  lg: "h-12 px-6 text-base",
+  sm: "h-9 text-sm",
+  md: "h-11 text-sm",
+  lg: "h-12 text-base",
   icon: "h-10 w-10",
 };
 
@@ -83,7 +83,6 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           
           "inline-flex items-center justify-center gap-2 rounded-xl",
           "font-medium transition-all duration-200",
-          "focus:outline-none focus:ring-2 focus:ring-offset-2",
           "select-none",
           "disabled:opacity-50 disabled:pointer-events-none",
 
