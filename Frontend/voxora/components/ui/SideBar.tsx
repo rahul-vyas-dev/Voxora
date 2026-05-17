@@ -27,7 +27,7 @@ function SideBar() {
         return;
       }
 
-      const backend_path = process.env.NEXT_PUBLIC_BACKEND_PATH;
+      const backend_path = process.env.BACKEND_PATH;
 
       const fetched_history: ChatHistory[] = await axios.post(backend_path!, {
         session_ids,

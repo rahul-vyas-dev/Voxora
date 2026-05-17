@@ -3,18 +3,31 @@
 import { FileUpload } from "@/components/ui/File-upload";
 import { useSidebar } from "@/utils/sidebar.context";
 import { useEffect, useRef, useState } from "react";
-import { useForm, SubmitHandler, Controller } from "react-hook-form";
+import { useForm, SubmitHandler, Controller, useWatch } from "react-hook-form";
 import { type STTStudioFormValues } from "@/types/stt.types";
 import { getAudioDuration } from "@/utils/audio";
 import { Button } from "@/components/Button";
+import { models } from "@/app/constants/whishper.model";
+import { toast } from "sonner";
+import { Copy, Download } from "lucide-react";
+import axios from "axios";
+import { STTResponse } from "@/types/stt.types";
 
 export default function Page() {
   const { open } = useSidebar();
   const [audio, setAudio] = useState<File | null>(null);
   const [isAudioPlay, setIsAudioPlay] = useState<boolean>(false);
   const [duration, setDuration] = useState<string>("0");
+  const [enabled, setEnabled] = useState(false);
+  const [aiResponse, setAiResponse] = useState<STTResponse | null>(null);
+  const [language, setLanguage] = useState<string>("");
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [selectedModel, setSelectedModel] = useState<"tiny" | "base" | "medium" | "large">(
+    "medium"
+  );
+  const backendUrl = process.env.BACKEND_PATH!;
+
   const [waveformHeights, setWaveformHeights] = useState<number[]>(() =>
     Array.from({ length: 70 }, () => Math.floor(Math.random() * 100))
   );
@@ -34,19 +47,55 @@ export default function Page() {
   };
 
   const {
-    register,
     handleSubmit,
-    watch,
     formState: { errors },
     control,
+    setValue,
+    getValues,
   } = useForm<STTStudioFormValues>({
     defaultValues: {
       audioFile: null,
       modelSize: "base",
       translateToEnglish: false,
-      voiceActivityDetection: false,
     },
   });
+
+  useEffect(() => {
+    toast.error(errors.audioFile?.message);
+  }, [errors.audioFile?.message]);
+
+  const isaudioChanges = useWatch({
+    control,
+    name: "audioFile",
+  });
+
+  const sizeChanges = useWatch({
+    control,
+    name: "modelSize",
+  });
+
+  const translateToEngLangChanges = useWatch({
+    control,
+    name: "translateToEnglish",
+  });
+
+  // set value on change
+  useEffect(() => {
+    const audioFile = getValues("audioFile");
+    if (audioFile) {
+      setAudio(audioFile);
+      setValue("modelSize", selectedModel);
+      setValue("translateToEnglish", enabled);
+    }
+  }, [
+    isaudioChanges,
+    sizeChanges,
+    translateToEngLangChanges,
+    getValues,
+    enabled,
+    selectedModel,
+    setValue,
+  ]);
 
   // create audio URL
   useEffect(() => {
@@ -72,12 +121,24 @@ export default function Page() {
 
   // Form submit
   const onSubmit: SubmitHandler<STTStudioFormValues> = async (data) => {
-    console.log(data);
     if (data.audioFile) {
       const duration = await getAudioDuration(data.audioFile);
       setDuration(formatDuration(duration));
     }
-    setAudio(data.audioFile);
+    setLanguage("Processing...");
+    try {
+      const response: STTResponse = await axios.post(`${backendUrl}/stt`, {
+        audio: data.audioFile,
+        model_size: data.modelSize,
+        translate: data.translateToEnglish,
+      });
+      setLanguage(response.language);
+      setAiResponse(response);
+      toast.success("Transcription done successfully.");
+    } catch (error) {
+      console.log("Error during api req to STT", error);
+      toast.error("Error during transcription.");
+    }
   };
 
   // Handle toggle audio
@@ -125,8 +186,11 @@ export default function Page() {
         <div className="absolute right-[-10%] bottom-[-10%] h-112.5 w-112.5 rounded-full bg-fuchsia-500/10 blur-3xl" />
       </div>
 
-      <section className="relative z-10 mx-auto flex max-w-7xl flex-col gap-8 px-6 py-10 lg:flex-row">
-        <form onSubmit={handleSubmit(onSubmit)}>
+      <section>
+        <form
+          className="relative z-10 mx-auto flex max-w-7xl flex-col gap-8 px-6 py-10 lg:flex-row"
+          onSubmit={handleSubmit(onSubmit)}
+        >
           {/* Left Section */}
           <div className="flex-1 space-y-8">
             {/* Heading */}
@@ -246,34 +310,52 @@ export default function Page() {
 
                 <div className="flex items-center gap-3 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 text-sm text-emerald-300">
                   <div className="h-2.5 w-2.5 animate-pulse rounded-full bg-emerald-400" />
-                  Processing...
+                  {language ? language : "Start"}
                 </div>
               </div>
 
               <div className="rounded-2xl border border-white/10 bg-black/30 p-5 text-zinc-300 backdrop-blur-xl">
-                <p className="leading-8 text-zinc-400">
-                  “Welcome to Nebula Studio. Today we are exploring how advanced neural speech
-                  recognition models convert complex human audio patterns into semantically
-                  structured data pipelines...”
+                <p className="scrollbar-thin scrollbar-track-transparent scrollbar-thumb-violet-400/70 hover:scrollbar-thumb-violet-300 max-h-40 overflow-y-auto pr-3 leading-relaxed text-zinc-400 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:border-2 [&::-webkit-scrollbar-thumb]:border-[#11111a] [&::-webkit-scrollbar-thumb]:bg-violet-400 [&::-webkit-scrollbar-thumb:hover]:bg-violet-300 [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent">
+                  {aiResponse?.text ? aiResponse.text : "Text will be visible here."}
                 </p>
               </div>
 
               {/* Progress */}
               <div className="mt-6 space-y-3">
-                <div className="flex items-center justify-between text-sm text-zinc-500">
-                  <span>Upload Progress</span>
-                  <span>74%</span>
-                </div>
+                <div className="flex flex-wrap items-center justify-between">
+                  <Button
+                    className="group relative overflow-hidden rounded-2xl border-[3px] border-violet-300 bg-violet-400 px-6 py-6 font-black tracking-tight text-black shadow-[6px_6px_0px_#7c3aed] transition-all duration-200 hover:-translate-y-1 hover:shadow-[10px_10px_0px_#7c3aed] active:translate-y-1 active:shadow-[3px_3px_0px_#7c3aed]"
+                    onClick={async () => {
+                      if (aiResponse?.text) {
+                        await navigator.clipboard.writeText(aiResponse.text);
+                        toast.success(<b>Text copied successfully.</b>);
+                      }
+                      toast.message(<b>Nothing to copy.</b>);
+                    }}
+                  >
+                    <span className="relative z-10 flex items-center gap-3">
+                      <Copy className="h-5 w-5 transition-transform duration-300 group-hover:scale-110" />
+                      Copy Text
+                    </span>
 
-                <div className="h-3 overflow-hidden rounded-full bg-white/10">
-                  <div className="h-full w-[74%] rounded-full bg-linear-to-r from-indigo-300 via-fuchsia-300 to-cyan-300 shadow-[0_0_20px_rgba(129,140,248,0.7)]" />
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.35),transparent_45%)]" />
+                  </Button>
+
+                  <Button className="group relative overflow-hidden rounded-2xl border-[3px] border-emerald-300 bg-[#11111a] px-6 py-6 font-black tracking-tight text-emerald-200 shadow-[6px_6px_0px_#059669] transition-all duration-200 hover:-translate-y-1 hover:shadow-[10px_10px_0px_#059669] active:translate-y-1 active:shadow-[3px_3px_0px_#059669]">
+                    <span className="relative z-10 flex items-center gap-3">
+                      <Download className="h-5 w-5 transition-transform duration-300 group-hover:translate-y-0.5" />
+                      Download File
+                    </span>
+
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.18),transparent_45%)]" />
+                  </Button>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Right Config Panel */}
-          <aside className="w-full max-w-sm">
+          <aside className="w-full lg:max-w-sm">
             <div className="sticky top-8 rounded-[32px] border border-white/10 bg-white/4 p-8 shadow-2xl backdrop-blur-2xl">
               <div className="mb-8 flex items-center gap-4">
                 <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-linear-to-br from-indigo-400/20 to-pink-400/20 text-2xl shadow-lg">
@@ -287,88 +369,97 @@ export default function Page() {
               </div>
 
               {/* Model Selection */}
-              <div className="space-y-4">
-                <h3 className="text-sm font-medium tracking-[0.2em] text-zinc-500 uppercase">
-                  Model Size
-                </h3>
+              <div className="space-y-5">
+                <div className="flex items-center gap-3">
+                  <div className="h-4 w-4 rounded-md bg-violet-400 shadow-[3px_3px_0px_#7c3aed]" />
 
-                <div className="grid grid-cols-2 gap-4">
-                  {[
-                    {
-                      name: "Tiny",
-                      desc: "Fastest speed",
-                    },
-                    {
-                      name: "Base",
-                      desc: "Efficient balance",
-                    },
-                    {
-                      name: "Medium",
-                      desc: "Best overall",
-                      active: true,
-                    },
-                    {
-                      name: "Large",
-                      desc: "Highest accuracy",
-                    },
-                  ].map((model) => (
-                    <button
-                      key={model.name}
-                      className={`rounded-2xl border p-5 text-left transition-all duration-300 ${
-                        model.active
-                          ? "border-indigo-300/40 bg-indigo-400/10 shadow-[0_0_40px_rgba(129,140,248,0.15)]"
-                          : "border-white/10 bg-white/3 hover:bg-white/6"
-                      }`}
-                    >
-                      <div className="mb-1 flex items-center justify-between">
-                        <span className="font-semibold text-white">{model.name}</span>
+                  <h3 className="text-sm font-black tracking-[0.25em] text-zinc-300 uppercase">
+                    Model Size
+                  </h3>
+                </div>
 
-                        {model.active && (
-                          <div className="h-3 w-3 rounded-full bg-indigo-300 shadow-[0_0_15px_rgba(129,140,248,1)]" />
+                <div className="grid grid-cols-2 gap-5">
+                  {models.map((model) => {
+                    const isActive = selectedModel === model.name;
+
+                    return (
+                      <button
+                        key={model.name}
+                        type="button"
+                        onClick={() => {
+                          setSelectedModel(model.name);
+                        }}
+                        className={`group relative overflow-hidden rounded-[24px] border-[3px] p-5 text-left transition-all duration-200 ${
+                          isActive
+                            ? `border-violet-300 bg-violet-400 text-black shadow-[8px_8px_0px_#7c3aed] hover:-translate-y-1 hover:shadow-[12px_12px_0px_#7c3aed]`
+                            : `border-zinc-700 bg-[#151520] text-white shadow-[6px_6px_0px_#27272a] hover:-translate-y-1 hover:border-violet-400/60 hover:shadow-[8px_8px_0px_#7c3aed]`
+                        } `}
+                      >
+                        {/* glow */}
+                        {isActive && (
+                          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.35),transparent_45%)]" />
                         )}
-                      </div>
 
-                      <p className="text-xs leading-relaxed text-zinc-500">{model.desc}</p>
-                    </button>
-                  ))}
+                        <div className="relative z-10">
+                          <div className="mb-3 flex items-center justify-between">
+                            <span
+                              className={`text-lg font-black tracking-tight ${
+                                isActive ? "text-black" : "text-white"
+                              } `}
+                            >
+                              {model.name}
+                            </span>
+
+                            <div
+                              className={`flex h-6 w-6 items-center justify-center rounded-full border-[3px] transition-all ${
+                                isActive
+                                  ? `border-black bg-white shadow-[2px_2px_0px_#000]`
+                                  : `border-zinc-500 bg-transparent`
+                              } `}
+                            >
+                              {isActive && <div className="h-2.5 w-2.5 rounded-full bg-black" />}
+                            </div>
+                          </div>
+
+                          <p
+                            className={`text-sm leading-relaxed ${
+                              isActive ? "text-black/80" : "text-zinc-400"
+                            } `}
+                          >
+                            {model.desc}
+                          </p>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
               {/* Toggles */}
               <div className="mt-10 space-y-6">
-                {[
-                  {
-                    title: "Translate to English",
-                    desc: "Auto-detect source language",
-                    active: true,
-                  },
-                  {
-                    title: "Voice Activity Detection",
-                    desc: "Skip silent intervals",
-                    active: false,
-                  },
-                ].map((item) => (
-                  <div key={item.title} className="flex items-start justify-between gap-4">
-                    <div>
-                      <h4 className="font-medium text-white">{item.title}</h4>
-                      <p className="mt-1 text-sm text-zinc-500">{item.desc}</p>
-                    </div>
-
-                    <button
-                      className={`relative h-8 w-14 rounded-full transition-all duration-300 ${
-                        item.active
-                          ? "bg-indigo-300 shadow-[0_0_20px_rgba(129,140,248,0.5)]"
-                          : "bg-white/10"
-                      }`}
-                    >
-                      <div
-                        className={`absolute top-1 h-6 w-6 rounded-full bg-white transition-all duration-300 ${
-                          item.active ? "right-1" : "left-1"
-                        }`}
-                      />
-                    </button>
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h4 className="font-medium text-white">Translate to English</h4>
+                    <p className="mt-1 text-sm text-zinc-500">Auto-detect source language</p>
                   </div>
-                ))}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEnabled((prev) => !prev);
+                    }}
+                    className={`relative flex h-8 w-16 items-center rounded-full border-[3px] transition-all duration-300 ${
+                      enabled
+                        ? `border-violet-300 bg-violet-400 shadow-[4px_4px_0px_#7c3aed]`
+                        : `border-zinc-600 bg-[#1a1a24] shadow-[4px_4px_0px_#27272a]`
+                    } `}
+                  >
+                    <div
+                      className={`absolute h-5 w-5 rounded-full border-2 bg-white transition-all duration-300 ${
+                        enabled ? "translate-x-9 border-black" : "translate-x-1 border-zinc-400"
+                      } `}
+                    />
+                  </button>
+                </div>
               </div>
 
               {/* Start Button */}

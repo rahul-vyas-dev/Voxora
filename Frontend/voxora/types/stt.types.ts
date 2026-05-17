@@ -9,3 +9,9 @@ export interface STTStudioFormValues {
   translateToEnglish: boolean;
   voiceActivityDetection: boolean;
 }
+
+export interface STTResponse {
+  text: string;
+  language: string;
+  segments: string[];
+}
