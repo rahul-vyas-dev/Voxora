@@ -8,9 +8,10 @@ import { FileUp, History, MessageSquare, Mic, Plus } from "lucide-react";
 import { toast } from "sonner";
 import axios from "axios";
 import { ChatHistory } from "@/types/history.type";
+import { useSidebar } from "@/utils/sidebar.context";
 
 function SideBar() {
-  const [open, setOpen] = useState(false);
+  const { open, setOpen } = useSidebar();
   const [userHistory, setUserHistory] = useState<Array<ChatHistory>>([]);
 
   const handleHistoryFetchOnClick = async () => {
@@ -22,7 +23,7 @@ function SideBar() {
         : [];
 
       if (session_ids.length == 0) {
-        toast("No history found!");
+        toast(<b>No history found!</b>);
         return;
       }
 
@@ -37,7 +38,7 @@ function SideBar() {
         return;
       }
 
-      toast.success("History fetched successfully.");
+      toast.success(<b>History fetched successfully.</b>);
       setUserHistory(fetched_history);
 
       sessionStorage.setItem("sessions", JSON.stringify(fetched_history));
@@ -51,11 +52,11 @@ function SideBar() {
   return (
     <aside
       aria-label="AI Assistant Sidebar Navigation"
-      className={`fixed h-screen bg-black border-r border-white/10 transition-all duration-300 flex flex-col ${
+      className={`fixed h-screen bg-black border-r border-white/10 transition-all duration-300 flex flex-col z-20 ${
         open ? "w-72" : "w-20"
       }`}
     >
-      <main className="flex flex-col h-full overflow-hidden p-4 relative mt-10">
+      <main className="mt-7 flex flex-col h-full overflow-hidden p-4 relative">
         {/* Toggle Button */}
         <div className="flex items-center py-4 border-b border-white/5 gap-3">
           <Button
@@ -119,7 +120,7 @@ function SideBar() {
           className="flex flex-col gap-1 mt-6"
         >
           <Link
-            href={"/hub"}
+            href={"/dashboard/hub"}
             className="flex items-center gap-3 rounded-xl px-3 py-3 text-zinc-300 hover:bg-white/10 hover:text-white transition-all duration-200"
           >
             <Mic size={20} />
@@ -127,7 +128,7 @@ function SideBar() {
           </Link>
 
           <Link
-            href={"/chat"}
+            href={"/dashboard/chat"}
             className="flex items-center gap-3 rounded-xl px-3 py-3 text-zinc-300 hover:bg-white/10 hover:text-white transition-all duration-200"
           >
             <MessageSquare size={20} />
@@ -135,7 +136,7 @@ function SideBar() {
           </Link>
 
           <Link
-            href={"/transcription"}
+            href={"/dashboard/transcription"}
             className="flex items-center gap-3 rounded-xl px-3 py-3 text-zinc-300 hover:bg-white/10 hover:text-white transition-all duration-200"
           >
             <FileUp size={20} />
