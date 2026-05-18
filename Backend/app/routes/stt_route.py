@@ -12,10 +12,9 @@ def stt(
     model_size: str = Form(...),
     translate: bool = Form(...)
 ):
-    
+
     if not audio.file:
         return {"result": "voice is Required for STT."}
-    
 
     os.makedirs("uploads", exist_ok=True)
 
