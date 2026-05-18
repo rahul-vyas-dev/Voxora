@@ -75,18 +75,18 @@ def delete_session_chat(session_id: str):
         db.close()
 
 
-def get_chat_history(session_ids: list[str]):
+def get_chat_history(session_ids: str):
 
     db = next(get_db())
 
     try:
         stmt = select(ChatHistory).where(
-            ChatHistory.session_id.in_(session_ids)
+            ChatHistory.session_id == session_ids
         )
 
         result = db.execute(stmt)
 
-        chats = result.scalars().all()
+        chats = result.scalar_one_or_none()
 
         return chats
 

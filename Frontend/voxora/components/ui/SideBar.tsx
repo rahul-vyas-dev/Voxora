@@ -52,7 +52,7 @@ function SideBar() {
   return (
     <aside
       aria-label="AI Assistant Sidebar Navigation"
-      className={`fixed h-screen bg-black border-r border-white/10 transition-all duration-300 flex flex-col z-20 ${
+      className={`fixed h-screen bg-black border-r border-white/10 transition-all duration-300 flex flex-col z-30 ${
         open ? "w-72" : "w-20"
       }`}
     >
@@ -164,7 +164,7 @@ function SideBar() {
               {userHistory.map((obj) => (
                 <Link
                   key={obj.session_id}
-                  href={`/chat/${obj.session_id}`}
+                  href={`/dashboard/chat/${obj.session_id}`}
                   className="rounded-xl border border-white/5 bg-white/3 px-4 py-3 text-sm text-zinc-300 hover:bg-white/10 hover:text-white transition-all duration-200 truncate"
                 >
                   {"Date " + obj.time_stamps}
