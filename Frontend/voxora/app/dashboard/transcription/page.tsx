@@ -17,15 +17,13 @@ export default function Page() {
   const { open } = useSidebar();
   const [audio, setAudio] = useState<File | null>(null);
   const [isAudioPlay, setIsAudioPlay] = useState<boolean>(false);
-  const [duration, setDuration] = useState<string>("0");
+  const [duration, setDuration] = useState<string>("");
   const [enabled, setEnabled] = useState(false);
   const [aiResponse, setAiResponse] = useState<STTResponse | null>(null);
   const [language, setLanguage] = useState<string>("");
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const [selectedModel, setSelectedModel] = useState<"tiny" | "base" | "medium" | "large">(
-    "medium"
-  );
+  const [selectedModel, setSelectedModel] = useState<"tiny" | "base" | "medium" | "large">("base");
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_PAT!;
 
   const [waveformHeights, setWaveformHeights] = useState<number[]>(() =>
@@ -121,19 +119,23 @@ export default function Page() {
 
   // Form submit
   const onSubmit: SubmitHandler<STTStudioFormValues> = async (data) => {
-    if (data.audioFile) {
-      const duration = await getAudioDuration(data.audioFile);
-      setDuration(formatDuration(duration));
-    }
     setLanguage("Processing...");
+
     try {
-      console.log(`${backendUrl}/stt`);
-      const response: STTResponse = await axios.post(`${backendUrl}/stt`, {
-        audio,
-        model_size: data.modelSize,
-        translate: data.translateToEnglish,
+      setAiResponse(null);
+      const formData = new FormData();
+
+      formData.append("audio", audio!);
+      formData.append("model_size", data.modelSize);
+      formData.append("translate", String(data.translateToEnglish));
+
+      const resData = await axios.post(`${backendUrl}/stt`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
-      setLanguage("Lang-code" + response.language);
+
+      const response: STTResponse = await resData.data;
+
+      setLanguage("Lang-code:" + " " + response.language);
       setAiResponse(response);
       toast.success("Transcription done successfully.");
     } catch (error) {
@@ -146,6 +148,9 @@ export default function Page() {
   // Handle toggle audio
   const handlePlayAudioOnClick = async () => {
     if (!audioRef.current) return;
+
+    const duration = await getAudioDuration(audio!);
+    setDuration(formatDuration(duration));
 
     setWaveformHeights(() => Array.from({ length: 70 }, () => Math.floor(Math.random() * 100)));
 
@@ -167,8 +172,8 @@ export default function Page() {
     if (!audioElement) return;
 
     const handleEnded = () => {
-      setIsAudioPlay(false);
       stopWaveAnimation();
+      setIsAudioPlay(false);
     };
 
     audioElement.addEventListener("ended", handleEnded);
@@ -325,7 +330,7 @@ export default function Page() {
 
                 {/* Result Box */}
                 <div className="rounded-[26px] border-[3px] border-zinc-700 bg-[#131c27] p-5 text-zinc-300 shadow-[6px_6px_0px_#1f2937]">
-                  <p className="scrollbar-thin scrollbar-track-transparent scrollbar-thumb-cyan-400/70 hover:scrollbar-thumb-cyan-300 max-h-40 overflow-y-auto pr-3 leading-relaxed text-zinc-300 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:border-2 [&::-webkit-scrollbar-thumb]:border-[#131c27] [&::-webkit-scrollbar-thumb]:bg-cyan-400 [&::-webkit-scrollbar-thumb:hover]:bg-cyan-300 [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent">
+                  <p className="scrollbar-thin select-none scrollbar-track-transparent scrollbar-thumb-cyan-400/70 hover:scrollbar-thumb-cyan-300 max-h-40 overflow-y-auto pr-3 leading-relaxed text-zinc-300 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:border-2 [&::-webkit-scrollbar-thumb]:border-[#131c27] [&::-webkit-scrollbar-thumb]:bg-cyan-400 [&::-webkit-scrollbar-thumb:hover]:bg-cyan-300 [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent">
                     {aiResponse?.text ? aiResponse.text : "Text will be visible here."}
                   </p>
                 </div>
@@ -386,7 +391,7 @@ export default function Page() {
 
           {/* Right Config Panel */}
           <aside className="group w-full lg:max-w-sm">
-            <div className="relative sticky top-8 overflow-hidden rounded-[36px] border-[3px] border-violet-300/40 bg-[#11111a] p-8 shadow-[12px_12px_0px_#7c3aed] transition-all duration-300 hover:-translate-y-1 hover:shadow-[16px_16px_0px_#7c3aed]">
+            <div className="relative top-8 overflow-hidden rounded-[36px] border-[3px] border-violet-300/40 bg-[#11111a] p-8 shadow-[12px_12px_0px_#7c3aed] transition-all duration-300 hover:-translate-y-1 hover:shadow-[16px_16px_0px_#7c3aed]">
               {/* glow */}
               <div className="pointer-events-none absolute inset-0 rounded-[36px] bg-[radial-gradient(circle_at_top_left,rgba(139,92,246,0.18),transparent_40%)]" />
 
