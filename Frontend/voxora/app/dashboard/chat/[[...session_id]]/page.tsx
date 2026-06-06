@@ -216,14 +216,16 @@ function Page() {
 
       {/* input */}
       <form onSubmit={handleSubmit(onSubmitPrompt)}>
-        <div className={`fixed bottom-6 z-20 flex w-4/5 justify-center md:bottom-10 md:w-4/5`}>
-          <div className="flex w-full flex-col gap-4 rounded-[32px] border-[3px] border-cyan-300/40 bg-[#151520] p-4 shadow-[8px_8px_0px_#0891b2]">
+        <div
+          className={`fixed bottom-6 z-20 flex w-[-webkit-fill-available] justify-center md:bottom-10`}
+        >
+          <div className="flex w-4/5 max-w-5xl flex-col gap-4 rounded-[32px] border-[3px] border-cyan-300/40 bg-[#151520] p-6 shadow-[8px_8px_0px_#0891b2]">
             {/* textarea */}
             <TextareaAutosize
               minRows={1}
               maxRows={6}
               placeholder="Whisper your inquiry to the void..."
-              className="flex-1 resize-none overflow-y-auto bg-transparent text-lg leading-relaxed text-white outline-none placeholder:text-zinc-500 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:border-2 [&::-webkit-scrollbar-thumb]:border-[#131c27] [&::-webkit-scrollbar-thumb]:bg-[#383838] [&::-webkit-scrollbar-thumb:hover]:bg-[#4d4d4d] [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent"
+              className="resize-none overflow-y-auto bg-transparent text-lg leading-relaxed text-white outline-none placeholder:text-zinc-500 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:border-2 [&::-webkit-scrollbar-thumb]:border-[#131c27] [&::-webkit-scrollbar-thumb]:bg-[#383838] [&::-webkit-scrollbar-thumb:hover]:bg-[#4d4d4d] [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent"
               {...register("prompt", { required: "Prompt is required." })}
               defaultValue={""}
             />
