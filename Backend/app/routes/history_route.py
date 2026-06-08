@@ -10,7 +10,7 @@ async def get_history(req: Request):
     body = await req.json()
 
     try:
-        session_ids: str = body.get("session_id")
+        session_ids: list[str] = body.get("session_ids")
         result = get_chat_history(session_ids=session_ids)
 
         return result

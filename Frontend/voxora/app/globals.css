@@ -128,3 +128,12 @@
     @apply font-sans;
   }
 }
+::selection {
+  background: rgba(38, 169, 198, 0.35);
+  color: #ffffff;
+}
+
+::-moz-selection {
+  background: rgba(38, 169, 198, 0.35);
+  color: #ffffff;
+}

@@ -1,7 +1,6 @@
 "use client";
 
 import { LLMFormValueType } from "@/types/chat.type";
-import { useSidebar } from "@/utils/sidebar.context";
 import axios from "axios";
 import { ArrowUp } from "lucide-react";
 import { useParams } from "next/navigation";
@@ -25,7 +24,6 @@ interface chats {
 }
 
 function Page() {
-  const { open } = useSidebar();
   const [historyChats, setHistoryChats] = useState<chats | null | undefined>(null);
   const [streamedText, setStreamedText] = useState("");
   const [streamedTextError, setStreamedTextError] = useState("");
@@ -39,10 +37,10 @@ function Page() {
     const fetcHistoryChats = async (session_id: string) => {
       try {
         const res = await axios.post(`${backendUrl}/history`, {
-          session_id,
+          session_ids: [session_id],
         });
-
-        setHistoryChats(res.data);
+        console.log("history fetch res", res);
+        setHistoryChats(res.data[0]);
       } catch (error) {
         console.log("Error during history fetch.", error);
         toast.error("Error during history fetch.");

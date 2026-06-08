@@ -75,19 +75,19 @@ def delete_session_chat(session_id: str):
         db.close()
 
 
-def get_chat_history(session_ids: str):
+def get_chat_history(session_ids: list[str]):
 
     db = next(get_db())
 
     try:
         stmt = select(ChatHistory).where(
-            ChatHistory.session_id == session_ids
+            ChatHistory.session_id.in_(session_ids)
         )
 
         result = db.execute(stmt)
 
-        chats = result.scalar_one_or_none()
-
+        chats = result.scalars().all()
+        print("Fetched chat history for session_ids", session_ids, chats)
         return chats
 
     except Exception as e:

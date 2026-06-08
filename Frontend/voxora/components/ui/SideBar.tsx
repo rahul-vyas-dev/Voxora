@@ -26,20 +26,22 @@ function SideBar() {
       }
 
       const backend_path = process.env.NEXT_PUBLIC_BACKEND_PAT;
-      console.log(backend_path);
-      const fetched_history: ChatHistory[] = await axios.post(`${backend_path!}/history`, {
-        session_ids,
-      });
+      const fetched_history: { data: ChatHistory[] } = await axios.post(
+        `${backend_path!}/history`,
+        {
+          session_ids,
+        }
+      );
 
-      if (fetched_history.length == 0) {
+      if (fetched_history.data.length == 0) {
         toast.error("No History found");
         return;
       }
 
       toast.success(<b>History fetched successfully.</b>);
-      setUserHistory(fetched_history);
-      console.log("history", fetched_history, userHistory);
-
+      setUserHistory(fetched_history.data);
+      console.log("fetched_history", fetched_history);
+      // {time_stamps: '2026-06-08T16:29:50.916130', session_id: '2bd1c20c-77f1-493b-8989-00e866cfd38c', messages: Array(1)}
       sessionStorage.setItem("sessions", JSON.stringify(fetched_history));
 
       return;
@@ -151,24 +153,27 @@ function SideBar() {
         </nav>
 
         {/* Scrollable History */}
-        <section
-          aria-label="User Chat History"
-          className="scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent flex-1 overflow-y-auto px-3 pb-28"
-        >
-          {userHistory.length ? (
-            <div className="flex flex-col gap-2">
-              {userHistory.map((obj) => (
-                <Link
-                  key={obj.session_id}
-                  href={`/dashboard/chat/${obj.session_id}`}
-                  className="truncate rounded-xl border border-white/5 bg-white/3 px-4 py-3 text-sm text-zinc-300 transition-all duration-200 hover:bg-white/10 hover:text-white"
-                >
-                  {"Date " + obj.time_stamps}
-                </Link>
-              ))}
-            </div>
-          ) : null}
-        </section>
+        {open && (
+          <section
+            aria-label="User Chat History"
+            className="flex-1 overflow-y-auto px-3 pb-28 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:border-2 [&::-webkit-scrollbar-thumb]:border-[#131c27] [&::-webkit-scrollbar-thumb]:bg-cyan-400 [&::-webkit-scrollbar-thumb:hover]:bg-cyan-300 [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent"
+          >
+            {userHistory.length ? (
+              <div className="flex flex-col gap-2">
+                {userHistory.map((obj) => (
+                  <Link
+                    key={obj.session_id}
+                    href={`/dashboard/chat/${obj.session_id}`}
+                    className="truncate rounded-xl border border-white/5 bg-white/3 px-4 py-3 text-sm text-zinc-300 transition-all duration-200 hover:bg-white/10 hover:text-white"
+                    aria-label={`chat ${obj.time_stamps}`}
+                  >
+                    {"Date " + obj.time_stamps}
+                  </Link>
+                ))}
+              </div>
+            ) : null}
+          </section>
+        )}
 
         {/* Bottom Fixed New Session */}
         <div className="absolute bottom-0 left-0 w-full border-t border-white/5 bg-[#0f0f0f] p-3">
