@@ -17,7 +17,7 @@ async def create_user_history(
         if existing_session:
 
             existing_session.messages = (
-                existing_session.messages + [{
+                (existing_session.messages or []) + [{
                     "user_prompt": user_prompt,
                     "ai_response": ai_response
                 }]

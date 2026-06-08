@@ -18,18 +18,16 @@ function SideBar() {
     try {
       const storedItem = localStorage.getItem("session_ids");
 
-      const session_ids: Array<string> = storedItem
-        ? JSON.parse(storedItem)
-        : [];
+      const session_ids: Array<string> = storedItem ? JSON.parse(storedItem) : [];
 
       if (session_ids.length == 0) {
         toast(<b>No history found!</b>);
         return;
       }
 
-      const backend_path = process.env.BACKEND_PATH;
-
-      const fetched_history: ChatHistory[] = await axios.post(backend_path!, {
+      const backend_path = process.env.NEXT_PUBLIC_BACKEND_PAT;
+      console.log(backend_path);
+      const fetched_history: ChatHistory[] = await axios.post(`${backend_path!}/history`, {
         session_ids,
       });
 
@@ -40,29 +38,30 @@ function SideBar() {
 
       toast.success(<b>History fetched successfully.</b>);
       setUserHistory(fetched_history);
+      console.log("history", fetched_history, userHistory);
 
       sessionStorage.setItem("sessions", JSON.stringify(fetched_history));
 
       return;
     } catch (error) {
-      toast.error(error as string);
+      console.log(error);
     }
   };
 
   return (
     <aside
       aria-label="AI Assistant Sidebar Navigation"
-      className={`fixed h-screen bg-black border-r border-white/10 transition-all duration-300 flex flex-col z-30 ${
+      className={`fixed z-30 flex h-screen flex-col border-r border-white/10 bg-black transition-all duration-300 ${
         open ? "w-72" : "w-20"
       }`}
     >
-      <main className="mt-7 flex flex-col h-full overflow-hidden p-4 relative">
+      <main className="relative mt-7 flex h-full flex-col overflow-hidden p-4">
         {/* Toggle Button */}
-        <div className="flex items-center py-4 border-b border-white/5 gap-3">
+        <div className="flex items-center gap-3 border-b border-white/5 py-4">
           <Button
             onClick={() => setOpen(!open)}
             aria-label="Toggle Sidebar Menu"
-            className="relative h-10 w-10 rounded-xl hover:bg-white/10 transition-colors"
+            className="relative h-10 w-10 rounded-xl transition-colors hover:bg-white/10"
           >
             {/* Top Line */}
             <span
@@ -73,7 +72,7 @@ function SideBar() {
 
             {/* Middle Line */}
             <span
-              className={`absolute left-1/2 top-1/2 h-0.5 w-6 -translate-x-1/2 -translate-y-1/2 bg-white transition-all duration-300 ${
+              className={`absolute top-1/2 left-1/2 h-0.5 w-6 -translate-x-1/2 -translate-y-1/2 bg-white transition-all duration-300 ${
                 open ? "opacity-0" : ""
               }`}
             />
@@ -90,12 +89,12 @@ function SideBar() {
 
         {/* Logo */}
         <div className="flex flex-col items-center gap-1 border-b border-white/5 p-1">
-          <div className="flex items-center gap-3 w-full">
+          <div className="flex w-full items-center gap-3">
             <Image
               src={VoxoraLogo}
               alt="Voxora AI Assistant Logo"
               aria-label="Voxora Logo"
-              className="rounded-full object-cover pointer-events-none select-none"
+              className="pointer-events-none rounded-full object-cover select-none"
               width={40}
               height={40}
               priority
@@ -104,7 +103,7 @@ function SideBar() {
 
             {open && (
               <div className="flex flex-col">
-                <h1 className="text-[#adc6ff] font-semibold text-xl tracking-wide">
+                <h1 className="text-xl font-semibold tracking-wide text-[#adc6ff]">
                   Nebula Assistant
                 </h1>
 
@@ -115,13 +114,10 @@ function SideBar() {
         </div>
 
         {/* Navigation */}
-        <nav
-          aria-label="Primary Navigation"
-          className="flex flex-col gap-1 mt-6"
-        >
+        <nav aria-label="Primary Navigation" className="mt-6 flex flex-col gap-1">
           <Link
             href={"/dashboard/hub"}
-            className="flex items-center gap-3 rounded-xl px-3 py-3 text-zinc-300 hover:bg-white/10 hover:text-white transition-all duration-200"
+            className="flex items-center gap-3 rounded-xl px-3 py-3 text-zinc-300 transition-all duration-200 hover:bg-white/10 hover:text-white"
           >
             <Mic size={20} />
             {open && <b className="font-medium">Hub</b>}
@@ -129,7 +125,7 @@ function SideBar() {
 
           <Link
             href={"/dashboard/chat"}
-            className="flex items-center gap-3 rounded-xl px-3 py-3 text-zinc-300 hover:bg-white/10 hover:text-white transition-all duration-200"
+            className="flex items-center gap-3 rounded-xl px-3 py-3 text-zinc-300 transition-all duration-200 hover:bg-white/10 hover:text-white"
           >
             <MessageSquare size={20} />
             {open && <b className="font-medium">Chat</b>}
@@ -137,7 +133,7 @@ function SideBar() {
 
           <Link
             href={"/dashboard/transcription"}
-            className="flex items-center gap-3 rounded-xl px-3 py-3 text-zinc-300 hover:bg-white/10 hover:text-white transition-all duration-200"
+            className="flex items-center gap-3 rounded-xl px-3 py-3 text-zinc-300 transition-all duration-200 hover:bg-white/10 hover:text-white"
           >
             <FileUp size={20} />
             {open && <b className="font-medium">Transcription</b>}
@@ -146,7 +142,7 @@ function SideBar() {
           <Button
             onClick={handleHistoryFetchOnClick}
             aria-label="Fetch Chat History"
-            className="justify-start gap-3 rounded-xl px-3 py-3 text-zinc-300 hover:bg-white/10 hover:text-white transition-all duration-200"
+            className="justify-start gap-3 rounded-xl px-3 py-3 text-zinc-300 transition-all duration-200 hover:bg-white/10 hover:text-white"
             variant="ghost"
           >
             <History size={20} />
@@ -157,7 +153,7 @@ function SideBar() {
         {/* Scrollable History */}
         <section
           aria-label="User Chat History"
-          className="flex-1 overflow-y-auto px-3 pb-28 scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent"
+          className="scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent flex-1 overflow-y-auto px-3 pb-28"
         >
           {userHistory.length ? (
             <div className="flex flex-col gap-2">
@@ -165,7 +161,7 @@ function SideBar() {
                 <Link
                   key={obj.session_id}
                   href={`/dashboard/chat/${obj.session_id}`}
-                  className="rounded-xl border border-white/5 bg-white/3 px-4 py-3 text-sm text-zinc-300 hover:bg-white/10 hover:text-white transition-all duration-200 truncate"
+                  className="truncate rounded-xl border border-white/5 bg-white/3 px-4 py-3 text-sm text-zinc-300 transition-all duration-200 hover:bg-white/10 hover:text-white"
                 >
                   {"Date " + obj.time_stamps}
                 </Link>
@@ -179,7 +175,7 @@ function SideBar() {
           <Link
             href={"/hub"}
             aria-label="Create New Session"
-            className="flex items-center gap-3 rounded-xl bg-white text-black px-4 py-3 hover:opacity-90 transition-all duration-200"
+            className="flex items-center gap-3 rounded-xl bg-white px-4 py-3 text-black transition-all duration-200 hover:opacity-90"
           >
             <Plus size={20} />
 

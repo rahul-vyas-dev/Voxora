@@ -27,7 +27,7 @@ async def llm(req: Request):
             msg=prompt,
             model=model,
             stream=True,
-            think=think,
+            # think=think,
             keep_alive="5m"
         )
 
@@ -55,7 +55,11 @@ async def llm(req: Request):
 
         return StreamingResponse(
             stream_generator(),
-            media_type="text/plain"
+            media_type="text/plain",
+            headers={
+               "Cache-Control": "no-cache",
+               "Connection": "keep-alive",
+            }
         )
 
     except Exception as e:

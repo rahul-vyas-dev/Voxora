@@ -26,10 +26,11 @@ interface chats {
 
 function Page() {
   const { open } = useSidebar();
-  const [historyChats, setHistoryChats] = useState<chats | null>(null);
+  const [historyChats, setHistoryChats] = useState<chats | null | undefined>(null);
   const [streamedText, setStreamedText] = useState("");
   const [streamedTextError, setStreamedTextError] = useState("");
   const [currentPrompt, setCurrentPrompt] = useState("");
+  const [valueInput, setValueInput] = useState("");
   const randomSessionId = useRef(uuidv4());
   // An array which have session_id inside it
   const params = useParams();
@@ -59,7 +60,7 @@ function Page() {
     setValue,
   } = useForm<LLMFormValueType>({
     defaultValues: {
-      model: "phi-3",
+      model: "dolphin-mistral:latest",
       think: "medium",
     },
   });
@@ -75,10 +76,9 @@ function Page() {
       setCurrentPrompt(data.prompt);
       setStreamedText("");
       setStreamedTextError("");
-
+      setValueInput("");
       if (!params.session_id?.length) {
         const storedItem = localStorage.getItem("session_ids");
-        console.log("stored key", storedItem);
         const session_ids: Array<string> = storedItem ? JSON.parse(storedItem) : [];
 
         if (!session_ids.includes(randomSessionId.current)) {
@@ -89,43 +89,50 @@ function Page() {
         }
       }
 
-      const response = await axios.post(`${backendUrl}/c`, {
-        prompt: data.prompt,
-        session_id: params.session_id?.[0] || randomSessionId,
-        think: data.think,
-        model: data.model,
+      const response = await fetch(`${backendUrl}/c`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          prompt: data.prompt,
+          session_id: params.session_id?.[0] || randomSessionId.current,
+          think: data.think,
+          model: data.model,
+        }),
       });
-      if (!response.data) return;
 
-      const reader = response.data.getReader();
+      if (!response.body) return;
 
+      const reader = response.body.getReader();
       const decoder = new TextDecoder();
-
-      let done = false;
 
       let fullText = "";
 
-      while (!done) {
-        const result = await reader.read();
-        done = result.done;
+      while (true) {
+        const { done, value } = await reader.read();
 
-        const chunkValue = decoder.decode(result.value);
+        if (done) break;
 
-        fullText += chunkValue;
+        const chunk = decoder.decode(value, {
+          stream: true,
+        });
 
-        // update UI progressively
-        setStreamedText((prev) => prev + chunkValue);
+        fullText += chunk;
+
+        // stream to UI live
+        setStreamedText((prev) => prev + chunk);
       }
 
       setHistoryChats((prev) => {
-        if (!prev) return null;
-
         return {
           ...prev,
+          session_id: prev?.session_id || randomSessionId.current,
+          time_stamps: prev?.time_stamps || new Date(),
           messages: [
-            ...prev.messages,
+            ...(prev?.messages || []),
             {
-              user_prompt: currentPrompt,
+              user_prompt: data.prompt,
               ai_response: fullText,
             },
           ],
@@ -143,9 +150,7 @@ function Page() {
   };
 
   return (
-    <section
-      className={`relative flex h-screen flex-col overflow-hidden bg-[#070b14] ${open ? "" : "ml-20"}`}
-    >
+    <section className={`relative flex h-screen flex-col overflow-hidden bg-[#070b14]`}>
       {/* background glow */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute top-[-10%] left-[10%] h-105 w-105 rounded-full bg-cyan-500/10 blur-3xl" />
@@ -153,31 +158,23 @@ function Page() {
       </div>
 
       {/* chat section */}
-      <div className="flex-1 overflow-y-auto px-4 pt-10 pb-52 md:px-10">
-        <div className="mx-auto flex w-full max-w-5xl flex-col gap-8">
+      <div className="flex-1 overflow-y-auto px-4 pt-10 pb-70 md:px-10">
+        <div className="mx-auto flex w-[70%] max-w-3xl flex-col gap-8">
           {/* history chats */}
           {historyChats?.messages?.map((chat, index) => (
             <div key={index} className="flex flex-col gap-5">
               {/* user message */}
               <div className="flex justify-end">
-                <div className="max-w-[90%] rounded-[28px] border-[3px] border-cyan-300 bg-cyan-400 px-6 py-5 text-base leading-relaxed font-bold text-black shadow-[6px_6px_0px_#0891b2] md:max-w-3xl">
+                <div className="max-w-[60%] rounded-[28px] bg-[#383b46] px-5 py-3 text-base leading-relaxed font-bold wrap-break-word text-zinc-100">
                   {chat.user_prompt}
                 </div>
               </div>
 
-              {/* ai response */}
-              <div className="flex items-start gap-4">
-                {/* ai icon */}
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border-[3px] border-violet-300 bg-violet-400 text-xl text-black shadow-[5px_5px_0px_#7c3aed]">
-                  ✦
-                </div>
-
-                {/* ai text */}
-                <div className="flex-1 rounded-[28px] border-[3px] border-zinc-700 bg-[#121826] px-6 py-5 shadow-[6px_6px_0px_#27272a]">
-                  <p className="leading-loose whitespace-pre-wrap text-zinc-300">
-                    {chat.ai_response}
-                  </p>
-                </div>
+              {/* ai text */}
+              <div className="flex-1 rounded-[28px] bg-[#121826] px-5 py-3">
+                <p className="leading-loose whitespace-pre-wrap text-zinc-100">
+                  {chat.ai_response}
+                </p>
               </div>
             </div>
           ))}
@@ -187,27 +184,21 @@ function Page() {
             <div className="flex flex-col gap-5">
               {/* current user prompt */}
               <div className="flex justify-end">
-                <div className="max-w-[90%] rounded-[28px] border-[3px] border-cyan-300 bg-cyan-400 px-6 py-5 text-base leading-relaxed font-bold text-black shadow-[6px_6px_0px_#0891b2] md:max-w-3xl">
+                <div className="max-w-[60%] rounded-[28px] bg-[#383b46] px-5 py-3 text-base leading-relaxed font-bold wrap-break-word text-zinc-100">
                   {currentPrompt}
                 </div>
               </div>
 
-              {/* streaming ai response */}
-              <div className="flex items-start gap-4">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border-[3px] border-violet-300 bg-violet-400 text-xl text-black shadow-[5px_5px_0px_#7c3aed]">
-                  ✦
-                </div>
-                <div className="flex-1 rounded-[28px] border-[3px] border-zinc-700 bg-[#121826] px-6 py-5 shadow-[6px_6px_0px_#27272a]">
-                  <p className="leading-loose whitespace-pre-wrap text-zinc-300">
-                    {streamedText ? (
-                      streamedText
-                    ) : streamedTextError ? (
-                      <span className="text-red-400">{streamedTextError}</span>
-                    ) : (
-                      <span className="animate-pulse text-zinc-500">Thinking...</span>
-                    )}
-                  </p>
-                </div>
+              <div className="flex-1 rounded-[28px] bg-[#121826] px-5 py-3">
+                <p className="leading-loose whitespace-pre-wrap text-zinc-300">
+                  {streamedText ? (
+                    streamedText
+                  ) : streamedTextError ? (
+                    <span className="text-red-400">{streamedTextError}</span>
+                  ) : (
+                    <span className="animate-pulse text-zinc-500">Thinking...</span>
+                  )}
+                </p>
               </div>
             </div>
           )}
@@ -219,7 +210,7 @@ function Page() {
         <div
           className={`fixed bottom-6 z-20 flex w-[-webkit-fill-available] justify-center md:bottom-10`}
         >
-          <div className="flex w-4/5 max-w-5xl flex-col gap-4 rounded-[32px] border-[3px] border-cyan-300/40 bg-[#151520] p-6 shadow-[8px_8px_0px_#0891b2]">
+          <div className="ml-5 flex w-[70%] max-w-3xl flex-col gap-4 rounded-[32px] border-[3px] border-cyan-300/40 bg-[#151520] p-6 shadow-[8px_8px_0px_#0891b2] sm:ml-0">
             {/* textarea */}
             <TextareaAutosize
               minRows={1}
@@ -227,7 +218,10 @@ function Page() {
               placeholder="Whisper your inquiry to the void..."
               className="resize-none overflow-y-auto bg-transparent text-lg leading-relaxed text-white outline-none placeholder:text-zinc-500 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:border-2 [&::-webkit-scrollbar-thumb]:border-[#131c27] [&::-webkit-scrollbar-thumb]:bg-[#383838] [&::-webkit-scrollbar-thumb:hover]:bg-[#4d4d4d] [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent"
               {...register("prompt", { required: "Prompt is required." })}
-              defaultValue={""}
+              value={valueInput}
+              onChange={(e) => {
+                setValueInput(e.target.value);
+              }}
             />
 
             <div className="flex flex-1 flex-row justify-between">
@@ -257,7 +251,7 @@ function Page() {
 
               {/* send button */}
               <button
-                className="flex h-12 w-12 shrink-0 items-center justify-center self-end rounded-2xl border-[3px] border-cyan-300 bg-cyan-400 text-2xl text-black shadow-[6px_6px_0px_#0891b2] transition-all duration-200 hover:-translate-y-1 hover:shadow-[10px_10px_0px_#0891b2] active:translate-y-1 active:shadow-[3px_3px_0px_#0891b2]"
+                className="flex h-12 w-12 shrink-0 items-center justify-center self-end rounded-2xl border-[3px] border-cyan-300 bg-cyan-400 text-2xl text-black hover:bg-cyan-300"
                 type="submit"
               >
                 <ArrowUp />
