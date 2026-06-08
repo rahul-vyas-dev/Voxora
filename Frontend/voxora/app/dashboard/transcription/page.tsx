@@ -185,7 +185,7 @@ export default function Page() {
 
   return (
     <main
-      className={`relative min-h-screen overflow-hidden bg-[#07090f] text-white ${open ? "" : "ml-20"} transition-all duration-300`}
+      className={`relative min-h-screen overflow-hidden bg-[#07090f] text-white transition-all duration-300`}
     >
       {/* Background Glow */}
       <div className="absolute inset-0 overflow-hidden">

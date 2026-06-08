@@ -86,7 +86,7 @@ function SideBar() {
               }`}
             />
           </Button>
-          {open && <b>Close Sidebar</b>}
+          {open && <b className="select-none">Close Sidebar</b>}
         </div>
 
         {/* Logo */}
