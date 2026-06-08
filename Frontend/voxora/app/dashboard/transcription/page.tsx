@@ -1,7 +1,6 @@
 "use client";
 
 import { FileUpload } from "@/components/ui/File-upload";
-import { useSidebar } from "@/utils/sidebar.context";
 import { useEffect, useRef, useState } from "react";
 import { useForm, SubmitHandler, Controller, useWatch } from "react-hook-form";
 import { type STTStudioFormValues } from "@/types/stt.types";
@@ -14,7 +13,6 @@ import axios from "axios";
 import { STTResponse } from "@/types/stt.types";
 
 export default function Page() {
-  const { open } = useSidebar();
   const [audio, setAudio] = useState<File | null>(null);
   const [isAudioPlay, setIsAudioPlay] = useState<boolean>(false);
   const [duration, setDuration] = useState<string>("");
